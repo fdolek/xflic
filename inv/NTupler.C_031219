@@ -1,0 +1,349 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+#include <time.h>
+#include <math.h>
+#include <string.h>
+#include "TH1.h"
+#include "TH2.h"
+#include "TH3.h"
+#include "TF1.h"
+#include "TF2.h"
+#include "TProfile.h"
+#include "TROOT.h"
+#include "TApplication.h"
+#include "TString.h"
+#include "TStyle.h"
+#include "TMath.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TRandom3.h"
+#include "TRandom.h"
+#include "TCanvas.h"
+#include "TGraph.h"
+#include "TGraph2D.h"
+#include "TGraphErrors.h"
+#include "TSpectrum.h"
+
+#include "TVirtualFFT.h"
+#include "Math/Functor.h"
+#include "TPolyLine3D.h"
+#include "TPolyMarker3D.h"
+#include "Math/Vector3D.h"
+#include "Fit/Fitter.h"
+
+#include <netinet/in.h>
+
+using namespace std;
+using namespace ROOT::Math;
+
+struct event
+{
+	int EventNo;
+	vector <float> signal[256];
+};
+event e;
+
+struct edata
+{
+	vector <vector<int>>* TPCWF;
+	vector <vector<int>>* PMTWF;
+};
+edata ed;
+
+int RunNo=0;
+int EventNo=0;
+int opt=0;
+ifstream::pos_type size=2097416;
+char hname[1000];
+char hname2[1000];
+char TPCinFilePath[1000];
+char PMTinFilePath[1000];
+char AnalysisFilePath[1000];
+char NTupleFilePath[1000];
+ifstream file;
+int data0loc=0;
+int TPCBaselineRun=0;
+int PMTBaselineRun=0;
+
+int ThInd=7;
+int ThCol=7;
+float ThPMT=2.5;
+
+float TPCBaselines[2][128][2]={{{0}}};
+float PMTBaselines[3][2]={{0}};
+
+int IC[256]={0};
+int CH[256]={0};
+
+double pStart[5] = {0};
+double fitParams[5]={0};
+
+int peakSearchWidth=1;
+
+string wt[2]={"Collection","Induction"};
+
+vector <int> B;
+
+void ToHex(const string& s, bool upper_case)
+{
+	int b;int I=0;
+	for (string::size_type i = 0; i < s.length(); ++i)
+	{
+		int z = s[i]&0xff;
+		if(i%4==0){b=0;b=z<<24;}
+		if(i%4==1){b+=z<<16;}
+		if(i%4==2){b+=z<<8;}
+		if(i%4==3)
+		{
+			b+=z;
+			I++;
+			B.push_back(ntohl(b));
+		}
+	}
+	for(int i1=0;i1<20;i1++)
+	{
+		if(B[i1]==0x41544144 && B[i1+1]==0 && B[i1+2]==0x110 && B[i1+3]==0 && B[i1+4]==0 && B[i1+5]==0)
+		{
+			data0loc=i1;
+			break;
+		}
+	}
+	data0loc+=9;
+}
+
+int Geta(int BB, int p)
+{
+	int a=0;
+	bool r=false;
+	if(p==0)
+	{
+		a=(BB&0x3ff);
+	}
+	else if(p==1)
+	{
+		a=(BB>>16&0x3ff);
+	}
+// 	if(a&0x200)
+// 	{
+// 		a-=1024;
+// 	}
+	return a;
+}
+
+int GetIndColl(int c)
+{
+	return ((c/32)%2);// 0-collection 1-induction
+}
+
+int GetGch(int c)
+{
+	if(c<64){return (256+(c%32)-160);}
+	else if(c<128){return (224+(c%32)-160);}
+	else if(c<192){return (192+(c%32)-160);}
+	else if(c<256){return (160+(c%32)-160);}
+}
+
+void ReadEvent()
+{
+	B.clear();
+	char * memblock=new char [size];
+	file.read (memblock, size);
+	ToHex(std::string(memblock, size), true);
+	
+	for(int i1=0;i1<256;i1++)
+	{
+		e.signal[i1].clear();
+	}
+	
+	int ch=0;
+	int a=0;
+	for(int i1=data0loc;i1<(data0loc+131072);i1++)
+	{
+		a=Geta(B[i1],0);
+		e.signal[ch].push_back(a);
+		ch++;
+		a=Geta(B[i1],1);
+		e.signal[ch].push_back(a);
+		ch++;
+		if(ch==64) ch=0;
+	}
+	data0loc+=131083;
+	ch=64;
+	a=0;
+	for(int i1=data0loc;i1<(data0loc+131072);i1++)
+	{
+		a=Geta(B[i1],0);
+		e.signal[ch].push_back(a);
+		ch++;
+		a=Geta(B[i1],1);
+		e.signal[ch].push_back(a);
+		ch++;
+		if(ch==128) ch=64;
+	}
+	data0loc+=131083;
+	ch=128;
+	a=0;
+	for(int i1=data0loc;i1<(data0loc+131072);i1++)
+	{
+		a=Geta(B[i1],0);
+		e.signal[ch].push_back(a);
+		ch++;
+		a=Geta(B[i1],1);
+		e.signal[ch].push_back(a);
+		ch++;
+		if(ch==192) ch=128;
+	}
+	data0loc+=131083;
+	ch=192;
+	a=0;
+	for(int i1=data0loc;i1<(data0loc+131072);i1++)
+	{
+		a=Geta(B[i1],0);
+		e.signal[ch].push_back(a);
+		ch++;
+		a=Geta(B[i1],1);
+		e.signal[ch].push_back(a);
+		ch++;
+		if(ch==256) ch=192;
+	}
+	B.clear();
+	delete memblock;
+}
+
+void FillICCH()
+{
+	for(int i1=0;i1<256;i1++)
+	{
+		int ic=GetIndColl(i1);
+		int gch=GetGch(i1);
+		IC[i1]=ic;
+		CH[i1]=gch;
+	}
+}
+
+int CO[256]={0};
+void ChOrd()
+{
+	for(int i1=0;i1<256;i1++){CO[i1]=-1;}
+	int ic=0;int gch=0;
+	for(int i1=0;i1<256;i1++)
+	{
+		ic=GetIndColl(i1);
+		gch=GetGch(i1);
+		CO[ic*128+gch]=i1;
+	}
+}
+
+void WriteNTuple()
+{
+	sprintf(hname,"%s/Run00%d.dat",TPCinFilePath,RunNo);
+	file.open(hname, ios::in|ios::binary|ios::ate);
+	
+	ifstream pmtinfile[3];
+	for(int i1=0;i1<3;i1++)
+	{
+		sprintf(hname,"cp %s/waveforms_ch%d_run%d.txt .;wait;",PMTinFilePath,i1,RunNo);
+		system(hname);
+		sprintf(hname,"waveforms_ch%d_run%d.txt",i1,RunNo);
+		pmtinfile[i1].open(hname);
+	}
+	
+	sprintf(hname,"Run_%d.root",RunNo);
+	TFile* outroot=new TFile(hname,"recreate");
+	TTree* T =  new TTree("T","T");
+	T->Branch("TPCWF",&ed.TPCWF);
+	T->Branch("PMTWF",&ed.PMTWF);
+	
+	vector <int> bb;
+	string strarr;
+	int Ev=0;
+	int ii=0;
+	file.seekg (0, ios::beg);
+	while(!file.eof())
+	{
+		ed.TPCWF->clear();
+		ed.PMTWF->clear();
+		
+		ReadEvent();
+		
+		for(int i1=0;i1<256;i1++)
+		{
+			bb.clear();
+			for(int i2=0;i2<4096;i2++)
+			{
+				bb.push_back(e.signal[CO[i1]][i2]);
+			}
+			ed.TPCWF->push_back(bb);
+		}
+		
+		for(int i1=0;i1<3;i1++)
+		{
+			getline(pmtinfile[i1],strarr,'\n');
+			istringstream iss(strarr);
+			ii=0;
+			bb.clear();
+			for(std::string s; iss >> s; )
+			{
+				if(ii>0)
+				{
+					bb.push_back(atoi(s.c_str()));
+				}
+				ii++;
+			}
+			ed.PMTWF->push_back(bb);
+		}
+		T->Fill();
+		Ev++;
+	}
+	int excessPMT[3]={0};
+	for(int i1=0;i1<3;i1++)
+	{
+		while(getline(pmtinfile[i1],strarr,'\n'))
+		{
+			excessPMT[i1]++;
+		}
+	}
+	cout<<"Run : "<<RunNo<<" NEvents= "<<Ev<<" PMT excess "<<excessPMT[0]<<" "<<excessPMT[1]<<" "<<excessPMT[2]<<endl;
+	for(int i1=0;i1<3;i1++)
+	{
+		pmtinfile[i1].close();
+	}
+	outroot->cd();
+	T->Write();
+	outroot->Close();
+	file.close();
+	
+	sprintf(hname,"mv Run_%d.root %s/Run_%d.root;wait;",RunNo,NTupleFilePath,RunNo);
+	system(hname);
+}
+
+int main( int argc, const char* argv[] )
+{
+	RunNo=atoi(argv[1]);
+	
+	FillICCH();
+	ChOrd();
+	
+	//local
+//	sprintf(TPCinFilePath,"/home/bbilki/D/Data/Flic/TPC");//where the Run00X.dat files reside
+//	sprintf(PMTinFilePath,"/home/bbilki/D/Data/Flic/PMT");//where the waveforms_chX.txt files reside
+// 	sprintf(AnalysisFilePath,".");//where Files and Histos will be placed
+	
+// 	//pc04-warp
+//  	sprintf(TPCinFilePath,"/Data1/completed");//where the Run00X.dat files reside
+//  	sprintf(PMTinFilePath,"/home/icadaq/CAENV1751Daq/PMTDAQCode_updated/mcrbee10");//where the waveforms_chX.txt files reside
+// 	sprintf(AnalysisFilePath,".");//where Files and Histos will be placed
+	
+// 	//eos
+ 	sprintf(TPCinFilePath,"/eos/project/f/flic2019/Data/TPC/Runs");//where the Run00X.dat files reside
+ 	sprintf(PMTinFilePath,"/eos/project/f/flic2019/Data/PMT/WaveForms");//where the waveforms_chX.txt files reside
+	sprintf(AnalysisFilePath,"/eos/project/f/flic2019/Analysis");//where Files and Histos will be placed
+	sprintf(NTupleFilePath,"/eos/project/f/flic2019/Data/NTuple");//where the Run_XX.root files reside
+	
+	WriteNTuple();
+}
+
