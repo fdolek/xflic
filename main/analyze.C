@@ -95,14 +95,10 @@ int main( int argc, const char* argv[] )
  	sprintf(PMTinFilePath,"/eos/project/f/flic2019/Data/PMT/WaveForms");//where the waveforms_chX.txt files reside
 	sprintf(AnalysisFilePath,"/eos/project/f/flic2019/Analysis");//where Files and Histos will be placed
 	sprintf(NTupleFilePath,"/eos/project/f/flic2019/Data/NTuple");//where the Run_XX.root files reside
-
-	sprintf(hname,"%s/Run_%d.root",NTupleFilePath,RunNo);
-	
+	sprintf(hname,"%s/Run_%d.root",NTupleFilePath,RunNo);	
 	TFile* inroot=new TFile(hname);
 	TTree* T =  (TTree*) inroot->Get("T");
-	
-	T->SetBranchAddress("PMTWF",&ed.PMTWF);
-	
+	T->SetBranchAddress("PMTWF",&ed.PMTWF);	
 	sprintf(hname,"NitroXen_%d.root",RunNo);
 	TFile* outroot=new TFile(hname,"recreate");
 	
@@ -129,12 +125,22 @@ int main( int argc, const char* argv[] )
 	TH1D* AvgWF_NZintegral[8][2];
 	
 	float calibs[2][8]={{35.01,36.16,23.92,16.92},{35.01,89.29,23.92,20.27}};
-	
 	int calibID=0;
 	int mcolors[8]={3,1,4,2,1,2,3,4};
+
+	TH1F* hh=new TH1F("PMTWF","PMTWF",15000,-0.5,14999.5);
+	TH1F* hh_BS=new TH1F("PMTWF_BS","PMTWF_BS",15000,-0.5,14999.5);
+	TH1F* hh1=new TH1F("PMTWF1","PMTWF1",15000,-0.5,14999.5);
+	TH1F* hh_BS_shifted=new TH1F("PMTWF_BS_shifted","PMTWF_BS_shifted",15000,-0.5,14999.5);
+	TH1F* hh_BS_shifted_norm=new TH1F("PMTWF_BS_shifted_norm","PMTWF_BS_shifted_norm",15000,-0.5,14999.5);
+	TF1* g1=new TF1("g1","gaus",-1000.,2000.);
+	TF1* tf1=new TF1("tf1","expo",0.,15000.);
+	TF1* tflin=new TF1("tflin","[0]",0.,15000.);
+	TF1* tflin2=new TF1("tflin2","[0]+[1]*x",0.,15000.);
+
 	
 	TGraph* tg[8];TGraph* tgPE[8];
-	for(int i1=0;i1<8;i1++)
+	for(int i1=0;i1<8;i1++)   
 	{
 		sprintf(hname,"Signal_vs_Event_%s",PMTNames[i1].c_str());
 		tg[i1]=new TGraph();
@@ -198,32 +204,18 @@ int main( int argc, const char* argv[] )
 		AvgWF_NZintegral[i1][0]=new TH1D(hname,hname,15000,-0.5,14999.5);
 		sprintf(hname,"AvgWF_NZintegral_%s_norm",PMTNames[i1].c_str());
 		AvgWF_NZintegral[i1][1]=new TH1D(hname,hname,15000,-0.5,14999.5);
-		
 		sprintf(hname,"Int_neg_vs_pos_%s",PMTNames[i1].c_str());
 		Int_neg_vs_pos[i1]=new TH2F(hname,hname,1000,-20000,0,1000,0,20000);
 	}
 	
-	TH1F* hh=new TH1F("PMTWF","PMTWF",15000,-0.5,14999.5);
-	TH1F* hh_BS=new TH1F("PMTWF_BS","PMTWF_BS",15000,-0.5,14999.5);
-	TH1F* hh1=new TH1F("PMTWF1","PMTWF1",15000,-0.5,14999.5);
-	TH1F* hh_BS_shifted=new TH1F("PMTWF_BS_shifted","PMTWF_BS_shifted",15000,-0.5,14999.5);
-	TH1F* hh_BS_shifted_norm=new TH1F("PMTWF_BS_shifted_norm","PMTWF_BS_shifted_norm",15000,-0.5,14999.5);
-	
-	for(int i1=1;i1<=hh1->GetNbinsX();i1++)
-		{
-			hh1->SetBinContent(i1,1);
-		}
-	
-	TF1* g1=new TF1("g1","gaus",-1000.,2000.);
-	TF1* tf1=new TF1("tf1","expo",0.,15000.);
-	TF1* tflin=new TF1("tflin","[0]",0.,15000.);
-	TF1* tflin2=new TF1("tflin2","[0]+[1]*x",0.,15000.);
+	for(int i1=1;i1<=hh1->GetNbinsX();i1++)  {hh1->SetBinContent(i1,1);}
 	
 	vector <float> Amp;
-
 	float hsum[20]={0.};
-	float hped=0;float hsig=0;
-	float hped2=0;float hsig2=0;
+	float hped=0;
+	float hped2=0;
+	float hsig=0;
+	float hsig2=0;
 	float xlim=0;
 	int fitstartbin=0;
 	int xlimbin=0;
@@ -241,7 +233,8 @@ int main( int argc, const char* argv[] )
 	float qints_10percent[8]={0};
 	float hpeds[8]={0};
 	
-	int sat[8]={0};int badBaseline[8]={0};
+	int sat[8]={0};
+	int badBaseline[8]={0};
 	int NSat[8]={0};
 	
 	float hmax=0;
@@ -268,12 +261,9 @@ int main( int argc, const char* argv[] )
 
 	for(int I=0;I<T->GetEntries();I++)
 	{
-		if(RunNo==426 && I<1250) continue;//Xe doping to 10 ppm
-		if(RunNo==435 && I<1050) continue;//Xe doping to 10 ppm
-		if(RunNo==449 && I<1100) continue;//Xe doping to 10 ppm
-		
 		T->GetEntry(I);
-		for(int i1=0;i1<8;i1++)
+
+		for(int i1=0;i1<8;i1++) // empty array i1
 		{
 			qints_1000_10000[i1]=0;
 			qints_1500_15000[i1]=0;
@@ -289,6 +279,7 @@ int main( int argc, const char* argv[] )
 			sat[i1]=0;
 			badBaseline[i1]=0;
 		}
+
 		for(int i1=0;i1<8;i1++)
 		{
 			for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
@@ -296,72 +287,58 @@ int main( int argc, const char* argv[] )
 				hh->SetBinContent(i2+1,ed.PMTWF->at(i1)[i2]);
 				if(ed.PMTWF->at(i1)[i2]==0) sat[i1]=1;
 			}
+			
 			if(hh->GetNbinsX()==0) continue;
+
 			AllWF[i1]->Add(hh);
 			hh->Fit(tflin,"q","q",0.,1500.);
+			
 			Baselines[i1]->Fill(tflin->GetParameter(0));
 			hped=tflin->GetParameter(0);
+			
 			hpeds[i1]=hped;
 			
 			for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
 			{
 				hsig=(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1]));
 				hh_BS->SetBinContent(i2+1,hsig);
-				if(i2>=1000 && i2<=10000) qints_1000_10000[i1]+=hsig;
-				if(i2>=1500)
-				{
-					qints_1500_15000[i1]+=hsig;
-					if(hsig>0)
-					{
-						qints_1500_15000_ZS[i1]+=hsig;
-					}
-					if(i2<=8000)
-					{
-						qints_1500_8000[i1]+=hsig;
-					}
-				}
-				if(i2>=1800 && i2<=6000)
-				{
-					qints_1800_6000[i1]+=hsig;
-				}
-				if(i2>=1800 && i2<=2500)
-				{
-					qints_1800_2500[i1]+=hsig;
-				}
-				if(i2>=1800 && i2<=15000)
-				{
-					qints_1800_15000[i1]+=hsig;
-				}
-				if(i2<1800)
-				{
-					qints_0_1800[i1]+=hsig;
-				}
-				if(hsig<0){qints_negative[i1]+=hsig;}
-				if(hsig>0){qints_positive[i1]+=hsig;}
+				
+				if(i2>=1000 && i2<=10000)   {qints_1000_10000[i1]+=hsig;}
+				if(i2>=1500)			    {qints_1500_15000[i1]+=hsig;
+							 if(hsig>0)		{qints_1500_15000_ZS[i1]+=hsig;}
+							if(i2<=8000)	{qints_1500_8000[i1]+=hsig;}}
+				if(i2>=1800 && i2<=6000)	{qints_1800_6000[i1]+=hsig;}
+				if(i2>=1800 && i2<=2500)	{qints_1800_2500[i1]+=hsig;}
+				if(i2>=1800 && i2<=15000)	{qints_1800_15000[i1]+=hsig;}
+				if(i2<1800)					{qints_0_1800[i1]+=hsig;}
+				if(hsig<0)					{qints_negative[i1]+=hsig;}
+				if(hsig>0)					{qints_positive[i1]+=hsig;}
 			}
-			Integral_0_1800[i1]->Fill(qints_0_1800[i1]);
-			Integral_negative[i1]->Fill(qints_negative[i1]);
-			Int_neg_vs_pos[i1]->Fill(qints_negative[i1],qints_positive[i1]);
+
+			Integral_0_1800[i1]		->		Fill(qints_0_1800[i1]);
+			Integral_negative[i1]	->		Fill(qints_negative[i1]);
+			Int_neg_vs_pos[i1]		->		Fill(qints_negative[i1],qints_positive[i1]);
+			
 			if(fabs(qints_0_1800[i1])>100) badBaseline[i1]=1;
 			if(sat[i1]!=1 && badBaseline[i1]!=1)
 			{
-				Frac_1800_2500_15000[i1]->Fill(qints_1800_2500[i1]/qints_1800_15000[i1]);
-				Integral_1000_10000[i1]->Fill(qints_1000_10000[i1]);
-				Integral_1500_15000[i1]->Fill(qints_1500_15000[i1]);
-				Integral_1500_8000[i1]->Fill(qints_1500_8000[i1]);
-				Integral_1800_6000[i1]->Fill(qints_1800_6000[i1]);
-				Integral_1500_15000_ZS[i1]->Fill(qints_1500_15000_ZS[i1]);
+				Frac_1800_2500_15000[i1]	->	Fill(qints_1800_2500[i1]/qints_1800_15000[i1]);
+				Integral_1000_10000[i1]		->	Fill(qints_1000_10000[i1]);
+				Integral_1500_15000[i1]		->	Fill(qints_1500_15000[i1]);
+				Integral_1500_8000[i1]		->	Fill(qints_1500_8000[i1]);
+				Integral_1800_6000[i1]		->	Fill(qints_1800_6000[i1]);
+				Integral_1500_15000_ZS[i1]	->	Fill(qints_1500_15000_ZS[i1]);
 				if(i1<4)
 				{
-					PE_1500_15000[i1]->Fill(qints_1500_15000[i1]/calibs[calibID][i1]);
-					PE_1500_8000[i1]->Fill(qints_1500_8000[i1]/calibs[calibID][i1]);
-					PE_1800_6000[i1]->Fill(qints_1800_6000[i1]/calibs[calibID][i1]);
-					tgPE[i1]->SetPoint(tgPE[i1]->GetN(),I,qints_1500_15000[i1]/calibs[calibID][i1]);
+					PE_1500_15000[i1]		->	Fill(qints_1500_15000[i1]/calibs[calibID][i1]);
+					PE_1500_8000[i1]		->	Fill(qints_1500_8000[i1]/calibs[calibID][i1]);
+					PE_1800_6000[i1]		->	Fill(qints_1800_6000[i1]/calibs[calibID][i1]);
+					tgPE[i1]				->	SetPoint(tgPE[i1]	->	GetN(),I,qints_1500_15000[i1]/calibs[calibID][i1]);
 				}
 			}
 			
-			peakbin=hh_BS->GetMaximumBin();
-			maxamp=hh_BS->GetBinContent(peakbin);
+			peakbin=hh_BS -> GetMaximumBin();
+			maxamp=hh_BS  -> GetBinContent(peakbin);
 			
 			for(int i2=peakbin;i2>=1;i2--)
 			{
@@ -380,16 +357,10 @@ int main( int argc, const char* argv[] )
 			
 			if(i1<4)
 			{
-				if(sat[i1]!=1 && badBaseline[i1]!=1)
-				{
-					Integral_10percent[i1]->Fill(qints_10percent[i1]);
-				}
+				if(sat[i1]!=1 && badBaseline[i1]!=1) {Integral_10percent[i1]->Fill(qints_10percent[i1]);}
 			}
 			
-			else
-			{
-				Integral_10percent[i1]->Fill(qints_10percent[i1]);
-			}
+			else{Integral_10percent[i1]->Fill(qints_10percent[i1]);}
 			tg[i1]->SetPoint(tg[i1]->GetN(),I,qints_1500_15000[i1]);
 
 			if(sat[i1]!=1 && badBaseline[i1]!=1)
@@ -405,48 +376,51 @@ int main( int argc, const char* argv[] )
 			hh_BS->Reset();
 		}
 
+		
+		for(int i1=0;i1<8;i1++)
 		{
-			for(int i1=0;i1<8;i1++)
+			if(sat[i1]==1 || badBaseline[i1]==1) continue;
+			hh_BS->Reset();
+			for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
 			{
-				if(sat[i1]==1 || badBaseline[i1]==1) continue;
-				hh_BS->Reset();
-				for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
-				{
-					hh_BS->SetBinContent(i2+1,(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1])));
-				}
-				AvgWF[i1][0]->Add(hh_BS);
-				AvgWF[i1][1]->Add(hh1);
-				if(qints_1500_15000[i1]>0)
-				{
-					AvgWF_NZintegral[i1][0]->Add(hh_BS);
-					AvgWF_NZintegral[i1][1]->Add(hh1);
-				}
-				
-				hh_BS_shifted->Reset();
-				hh_BS_shifted_norm->Reset();
-				
-				ibinmax=hh_BS->GetMaximumBin();
-				
-				binoffset=ibinmax;
-				
-				
-				for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
-				{
-					if((binoffset-2000+i2)>=1 && (binoffset-2000+i2)<=hh_BS->GetNbinsX())
-					{
-						hh_BS_shifted->SetBinContent(binoffset-2000+i2,(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1])));
-						hh_BS_shifted_norm->SetBinContent(binoffset-2000+i2,1);
-					}
-				}
-				AvgWF_shifted[i1][0]->Add(hh_BS_shifted);
-				AvgWF_shifted[i1][1]->Add(hh_BS_shifted_norm);
+				hh_BS->SetBinContent(i2+1,(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1])));
 			}
+			AvgWF[i1][0]->Add(hh_BS);
+			AvgWF[i1][1]->Add(hh1);
+			if(qints_1500_15000[i1]>0)
+			{
+				AvgWF_NZintegral[i1][0]->Add(hh_BS);
+				AvgWF_NZintegral[i1][1]->Add(hh1);
+			}
+			
+			hh_BS_shifted->Reset();
+			hh_BS_shifted_norm->Reset();
+			
+			ibinmax=hh_BS->GetMaximumBin();
+			
+			binoffset=ibinmax;
+			
+			
+			for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
+			{
+				if((binoffset-2000+i2)>=1 && (binoffset-2000+i2)<=hh_BS->GetNbinsX())
+				{
+					hh_BS_shifted->SetBinContent(binoffset-2000+i2,(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1])));
+					hh_BS_shifted_norm->SetBinContent(binoffset-2000+i2,1);
+				}
+			}
+			AvgWF_shifted[i1][0]->Add(hh_BS_shifted);
+			AvgWF_shifted[i1][1]->Add(hh_BS_shifted_norm);
 		}
+
 		SC2_vs_SC1->Fill(qints_10percent[5],qints_10percent[4]);
 		if(I%1000==0) cout<<I<<" / "<<T->GetEntries()<<endl;
 	}
-	
 	outroot->cd();
+	
+
+
+
 	for(int i1=0;i1<8;i1++)
 	{
 		AllWF[i1]->Write();
@@ -469,13 +443,12 @@ int main( int argc, const char* argv[] )
 		AvgWF_shifted[i1][0]->Write();
 		AllUnsatAvgWF[i1][0]->Divide(AllUnsatAvgWF[i1][1]);
 		AllUnsatAvgWF[i1][0]->Write();
-		{
-			PE_1500_15000[i1]->Write();
-			PE_1500_8000[i1]->Write();
-			PE_1800_6000[i1]->Write();
-			tg[i1]->Write();
-			tgPE[i1]->Write();
-		}
+		
+		PE_1500_15000[i1]->Write();
+		PE_1500_8000[i1]->Write();
+		PE_1800_6000[i1]->Write();
+		tg[i1]->Write();
+		tgPE[i1]->Write();		
 	}
 	
 	SC2_vs_SC1->Write();
