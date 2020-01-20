@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
 #include <time.h>
 #include <math.h>
 #include <string.h>
@@ -28,16 +27,13 @@
 #include "TGraph2D.h"
 #include "TGraphErrors.h"
 #include "TSpectrum.h"
-
 #include "TVirtualFFT.h"
 #include "Math/Functor.h"
 #include "TPolyLine3D.h"
 #include "TPolyMarker3D.h"
 #include "Math/Vector3D.h"
-//#include "Math/Vector3Dfwd.h"
 #include "Fit/Fitter.h"
- 
-#include <netinet/in.h>
+ #include <netinet/in.h>
 
 using namespace std;
 using namespace ROOT::Math;
@@ -48,30 +44,33 @@ struct edata
 };
 edata ed;
 
-int RunNo=0;
-int EventNo=0;
-int opt=0;
 ifstream::pos_type size=2097416;
+ifstream file;
+
+
 char hname[1000];
 char hname2[1000];
 char TPCinFilePath[1000];
 char PMTinFilePath[1000];
 char AnalysisFilePath[1000];
 char NTupleFilePath[1000];
-ifstream file;
+
+
+int RunNo=0;
+int EventNo=0;
+int opt=0;
 int data0loc=0;
 int TPCBaselineRun=0;
 int PMTBaselineRun=0;
 int TimeRange[2]={750,2500};
-float HitColIndDist=5.;
 int NPMTs=8;//number of PMTs
+int IC[256]={0};
+int CH[256]={0};
+int peakSearchWidth=1;
 
-// int ThInd=7;
-// int ThCol=7;
-// int ThInd=3;
-// int ThCol=4;
-// float ThInd=3;
-// float ThCol=4;
+
+
+float HitColIndDist=5.;
 float ThColInd[2]={0};//Col ind
 float ThColIndW[2][128]={{0}};//Col ind
 float ThPMT[3]={0.};
@@ -80,31 +79,28 @@ float TPCBaselines[2][128][2]={{{0}}};
 float PMTBaselines[3][2]={{0}};
 float ThSigma[2]={4.5,4.5};//threshold for collection and induction signal sigmas above baseline for hit reconstruction
 
-int IC[256]={0};
-int CH[256]={0};
-
 double pStart[5] = {0};
 double fitParams[5]={0};
 
-int peakSearchWidth=1;
 
-// string PMTNames[8]={"LAr_wTPB","LAr_noTPB","LXe","LAr_wTPB_new","SC1","SC2"};
 string PMTNames[8]={"LAr_noTPB","LAr_wTPB","LAr_wTPB_new","LXe","SC1","SiPM_Quartz","SiPM_TPB","S13371_Window"};
+
 float baselines[8]={903.4,913.9,920.8,928.1,916.1,932.5,1,1};
 
 int main( int argc, const char* argv[] )
 {
 	RunNo=atoi(argv[1]);
 	
-// 	//eos
  	sprintf(TPCinFilePath,"/eos/project/f/flic2019/Data/TPC/Runs");//where the Run00X.dat files reside
  	sprintf(PMTinFilePath,"/eos/project/f/flic2019/Data/PMT/WaveForms");//where the waveforms_chX.txt files reside
 	sprintf(AnalysisFilePath,"/eos/project/f/flic2019/Analysis");//where Files and Histos will be placed
 	sprintf(NTupleFilePath,"/eos/project/f/flic2019/Data/NTuple");//where the Run_XX.root files reside
 
 	sprintf(hname,"%s/Run_%d.root",NTupleFilePath,RunNo);
+	
 	TFile* inroot=new TFile(hname);
 	TTree* T =  (TTree*) inroot->Get("T");
+	
 	T->SetBranchAddress("PMTWF",&ed.PMTWF);
 	
 	sprintf(hname,"NitroXen_%d.root",RunNo);
@@ -132,13 +128,9 @@ int main( int argc, const char* argv[] )
 	TH1D* AvgWF_shifted[8][2];
 	TH1D* AvgWF_NZintegral[8][2];
 	
-// 	float calibs[2][4]={{36.04,38.41,23.59,12.54},{36.04,88.21,23.59,21.37}};
-// 	float calibs[2][4]={{35.01,36.16,23.92,16.92},{35.01,89.29,23.92,20.27}};
 	float calibs[2][8]={{35.01,36.16,23.92,16.92},{35.01,89.29,23.92,20.27}};
-	int calibID=0;
-// 	if(RunNo>=299) calibID=1;
-// 	else calibID=0;
 	
+	int calibID=0;
 	int mcolors[8]={3,1,4,2,1,2,3,4};
 	
 	TGraph* tg[8];TGraph* tgPE[8];
@@ -217,29 +209,25 @@ int main( int argc, const char* argv[] )
 	TH1F* hh_BS_shifted=new TH1F("PMTWF_BS_shifted","PMTWF_BS_shifted",15000,-0.5,14999.5);
 	TH1F* hh_BS_shifted_norm=new TH1F("PMTWF_BS_shifted_norm","PMTWF_BS_shifted_norm",15000,-0.5,14999.5);
 	
-	for(int i1=1;i1<=hh1->GetNbinsX();i1++){hh1->SetBinContent(i1,1);}
+	for(int i1=1;i1<=hh1->GetNbinsX();i1++)
+		{
+			hh1->SetBinContent(i1,1);
+		}
 	
 	TF1* g1=new TF1("g1","gaus",-1000.,2000.);
-// 	TF1* tf1=new TF1("tf1","[0]*(exp([0]+[1]*(x-[2]))+exp([3]+[4]*(x-[2]))+exp([5]+[8]*(x-[2]))+exp([7]+[8]*(x-[2])))",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","(exp([0]+[1]*(x-[2]))+exp([3]+[4]*(x-[2]))+exp([5]+[8]*(x-[2])))",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","gaus(0)+expo(3)+expo(5)",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","[0]*pow(x-[1],[2])*([3]*exp(-(x-[1])/[4])+[5]*exp(-(x-[1])/[8]))",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","[0]*pow(x-[1],[2])*(exp(-(x-[1])/[3])+exp(-(x-[1])/[4]))",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","[0]*exp(-0.5*(pow((log((x)/[2]))/[3],2)))",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","landau(0)+expo(3)",0.,15000.);
-// 	TF1* tf1=new TF1("tf1","[0]*exp(-pow((x-[1])/[2],2))+[8]*exp(-x/[3])+[7]*exp(-x/[4])+[8]*exp(-x/[5])",0.,15000.);
-// 	TF1 *tf1 = new TF1("fit",fitf2f,0.,15000,6);
-// 	TF1 *tf1 = new TF1("fit",fitf3f,0.,15000,7);
-//  	TF1* tf1=new TF1("tf1","([0]/[3])*exp(-(log(x-[1])-[2])^2/(2.*[3]^2))",0.,15000.);
 	TF1* tf1=new TF1("tf1","expo",0.,15000.);
 	TF1* tflin=new TF1("tflin","[0]",0.,15000.);
 	TF1* tflin2=new TF1("tflin2","[0]+[1]*x",0.,15000.);
 	
 	vector <float> Amp;
+
 	float hsum[20]={0.};
 	float hped=0;float hsig=0;
 	float hped2=0;float hsig2=0;
-	float xlim=0;int fitstartbin=0;int xlimbin=0;
+	float xlim=0;
+	int fitstartbin=0;
+	int xlimbin=0;
+	
 	float qints_1000_10000[8]={0};
 	float qints_1500_15000[8]={0};
 	float qints_1500_8000[8]={0};
@@ -252,18 +240,32 @@ int main( int argc, const char* argv[] )
 	float qints_1500_15000_ZS[8]={0};
 	float qints_10percent[8]={0};
 	float hpeds[8]={0};
+	
 	int sat[8]={0};int badBaseline[8]={0};
 	int NSat[8]={0};
 	
-	float hmax=0;float hmax75=0;float hmax25=0;
-	float xmax=0;float xmax75=0;float xmax25=0;
-	int ibinmax=0;int ibinmax75=0;int ibinmax25=0;
+	float hmax=0;
+	float hmax75=0;
+	float hmax25=0;
+	float xmax=0;
+	float xmax75=0;
+	float xmax25=0;
+	
+	int ibinmax=0;
+	int ibinmax75=0;
+	int ibinmax25=0;
+	
 	float xoffset=0;
 	int binoffset=0;
 	
-	int sbin=0;int minbin=0;int maxbin=0;int peakbin=0;
-	float maxamp=0;int nc=0;
+	int sbin=0;
+	int minbin=0;
+	int maxbin=0;
+	int peakbin=0;
+	int nc=0;
 	
+	float maxamp=0;
+
 	for(int I=0;I<T->GetEntries();I++)
 	{
 		if(RunNo==426 && I<1250) continue;//Xe doping to 10 ppm
@@ -304,7 +306,6 @@ int main( int argc, const char* argv[] )
 			for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
 			{
 				hsig=(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1]));
-// 				hsig=(-1.*(((float)ed.PMTWF->at(i1)[i2])-baselines[i1]));
 				hh_BS->SetBinContent(i2+1,hsig);
 				if(i2>=1000 && i2<=10000) qints_1000_10000[i1]+=hsig;
 				if(i2>=1500)
@@ -349,7 +350,6 @@ int main( int argc, const char* argv[] )
 				Integral_1500_15000[i1]->Fill(qints_1500_15000[i1]);
 				Integral_1500_8000[i1]->Fill(qints_1500_8000[i1]);
 				Integral_1800_6000[i1]->Fill(qints_1800_6000[i1]);
-// 				if(qints_1800_6000[i1]<500 && i1==0) cout<<I<<" "<<qints_1800_6000[i1]<<endl;
 				Integral_1500_15000_ZS[i1]->Fill(qints_1500_15000_ZS[i1]);
 				if(i1<4)
 				{
@@ -357,24 +357,27 @@ int main( int argc, const char* argv[] )
 					PE_1500_8000[i1]->Fill(qints_1500_8000[i1]/calibs[calibID][i1]);
 					PE_1800_6000[i1]->Fill(qints_1800_6000[i1]/calibs[calibID][i1]);
 					tgPE[i1]->SetPoint(tgPE[i1]->GetN(),I,qints_1500_15000[i1]/calibs[calibID][i1]);
-// 					if(qints_1800_6000[i1]<500 && i1==0) cout<<I<<" "<<i1<<" "<<qints_1800_6000[i1]<<endl;
 				}
 			}
 			
 			peakbin=hh_BS->GetMaximumBin();
 			maxamp=hh_BS->GetBinContent(peakbin);
+			
 			for(int i2=peakbin;i2>=1;i2--)
 			{
 				if((hh_BS->GetBinContent(i2)/maxamp)<0.1){minbin=i2;break;}
 			}
+			
 			for(int i2=peakbin;i2<=hh_BS->GetNbinsX();i2++)
 			{
 				if((hh_BS->GetBinContent(i2)/maxamp)<0.1){maxbin=i2;break;}
 			}
+			
 			for(int i2=minbin;i2<=maxbin;i2++)
 			{
 				qints_10percent[i1]+=hh_BS->GetBinContent(i2);
 			}
+			
 			if(i1<4)
 			{
 				if(sat[i1]!=1 && badBaseline[i1]!=1)
@@ -382,12 +385,13 @@ int main( int argc, const char* argv[] )
 					Integral_10percent[i1]->Fill(qints_10percent[i1]);
 				}
 			}
+			
 			else
 			{
 				Integral_10percent[i1]->Fill(qints_10percent[i1]);
 			}
 			tg[i1]->SetPoint(tg[i1]->GetN(),I,qints_1500_15000[i1]);
-// 			if(i1==0 && qints_1500_15000[i1]<-500) cout<<RunNo<<" "<<" "<<I<<" "<<qints_1500_15000[i1]<<endl;
+
 			if(sat[i1]!=1 && badBaseline[i1]!=1)
 			{
 				AllUnsatAvgWF[i1][0]->Add(hh_BS);
@@ -400,8 +404,7 @@ int main( int argc, const char* argv[] )
 			hh->Reset();
 			hh_BS->Reset();
 		}
-// 		if(qints_10percent[4]>5000 && qints_10percent[4]<22000 && qints_10percent[5]>1500 && qints_10percent[5]<4000)
-// 		if(qints_10percent[4]>2000)
+
 		{
 			for(int i1=0;i1<8;i1++)
 			{
@@ -410,7 +413,6 @@ int main( int argc, const char* argv[] )
 				for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
 				{
 					hh_BS->SetBinContent(i2+1,(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1])));
-// 					hh_BS->SetBinContent(i2+1,(-1.*(((float)ed.PMTWF->at(i1)[i2])-baselines[i1])));
 				}
 				AvgWF[i1][0]->Add(hh_BS);
 				AvgWF[i1][1]->Add(hh1);
@@ -427,26 +429,12 @@ int main( int argc, const char* argv[] )
 				
 				binoffset=ibinmax;
 				
-// 				hmax=hh_BS->GetBinContent(ibinmax);
-// 				xmax=hh_BS->GetBinCenter(ibinmax);
-// 				for(int is1=ibinmax;is1>=1;is1--)
-// 				{
-// 					if((hh_BS->GetBinContent(is1)/hmax)<0.75){ibinmax75=is1;hmax75=hh_BS->GetBinContent(is1);xmax75=hh_BS->GetBinCenter(is1);break;}
-// 				}
-// 				for(int is1=ibinmax75;is1>=1;is1--)
-// 				{
-// 					if((hh_BS->GetBinContent(is1)/hmax)<0.25){ibinmax25=is1;hmax25=hh_BS->GetBinContent(is1);xmax25=hh_BS->GetBinCenter(is1);break;}
-// 				}
-// 				hh_BS->Fit(tflin2,"q","q",xmax25,xmax75);
-// 				xoffset=-1.*tflin2->GetParameter(0)/tflin2->GetParameter(1);
-// 				binoffset=hh_BS->FindBin(xoffset);
 				
 				for(int i2=0;i2<ed.PMTWF->at(i1).size();i2++)
 				{
 					if((binoffset-2000+i2)>=1 && (binoffset-2000+i2)<=hh_BS->GetNbinsX())
 					{
 						hh_BS_shifted->SetBinContent(binoffset-2000+i2,(-1.*(((float)ed.PMTWF->at(i1)[i2])-hpeds[i1])));
-// 						hh_BS_shifted->SetBinContent(binoffset-2000+i2,(-1.*(((float)ed.PMTWF->at(i1)[i2])-baselines[i1])));
 						hh_BS_shifted_norm->SetBinContent(binoffset-2000+i2,1);
 					}
 				}
@@ -481,7 +469,6 @@ int main( int argc, const char* argv[] )
 		AvgWF_shifted[i1][0]->Write();
 		AllUnsatAvgWF[i1][0]->Divide(AllUnsatAvgWF[i1][1]);
 		AllUnsatAvgWF[i1][0]->Write();
-// 		if(i1<4)
 		{
 			PE_1500_15000[i1]->Write();
 			PE_1500_8000[i1]->Write();
@@ -490,6 +477,7 @@ int main( int argc, const char* argv[] )
 			tgPE[i1]->Write();
 		}
 	}
+	
 	SC2_vs_SC1->Write();
 	outroot->Close();
 	
@@ -498,8 +486,4 @@ int main( int argc, const char* argv[] )
 	{
 		cout<<PMTNames[i1]<<" : "<<NSat[i1]<<endl;
 	}
-	
-// 	sprintf(hname,"cp PMTCalibration3_%d.root %s/Histos/PMTCalibration3_%d.root",RunNo,AnalysisFilePath,RunNo);system(hname);
 }
-
-
