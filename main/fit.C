@@ -52,13 +52,13 @@ int main( int argc, const char* argv[] )
 {
 // 	RunNo=atoi(argv[1]);
 	
-// 	sprintf(hname,"NitroXenFits_3-component.root");
-	sprintf(hname,"NitroXenFits_2-component.root");
+ 	sprintf(hname,"NitroXenFits_3-component.root");
+	//sprintf(hname,"NitroXenFits_2-component.root");
 	TFile* outroot=new TFile(hname,"recreate");
 	TFile* inroot;
 	
-// 	ofstream outfile("FitResults_3component.txt");
-	ofstream outfile("FitResults_2component.txt");
+ 	ofstream outfile("FitResults_3component.txt");
+//	ofstream outfile("FitResults_2component.txt");
 	
 	int colors[8]={3,1,4,2,1,2,3,4};
 	
@@ -157,39 +157,39 @@ int main( int argc, const char* argv[] )
 			inroot->GetObject(hname,hh[i2]);
 			
 // // // 			3-component fit
-// 			tf3->SetParameter(0,50);
-// 			tf3->SetParameter(1,2000);
-// 			tf3->SetParameter(2,6);
-// 			tf3->SetParameter(4,90);
-// 			tf3->SetParameter(6,1600);
-// 			
-// 			tf3->SetParLimits(0,0,100);
-// 			tf3->SetParLimits(1,1800,2100);
-// 			tf3->SetParLimits(2,2,20);
-// 			tf3->SetParLimits(3,0,100);
+ 			tf3->SetParameter(0,50);
+ 			tf3->SetParameter(1,2000);
+ 			tf3->SetParameter(2,6);
+ 			tf3->SetParameter(4,90);
+ 			tf3->SetParameter(6,1600);
+ 			
+ 			tf3->SetParLimits(0,0,100);
+ 			tf3->SetParLimits(1,1800,2100);
+ 			tf3->SetParLimits(2,2,20);
+ 			tf3->SetParLimits(3,0,100);
 // // 			tf3->SetParLimits(4,10,400);
-// 			tf3->SetParLimits(4,10,800);
-// 			tf3->SetParLimits(5,0,100);
-// 			tf3->SetParLimits(6,500,2000);
+ 			tf3->SetParLimits(4,10,800);
+ 			tf3->SetParLimits(5,0,100);
+ 			tf3->SetParLimits(6,500,2000);
 			
 			binmax=hh[i2]->GetMaximumBin();
 			valmax=hh[i2]->GetBinContent(binmax);
 			xmax=hh[i2]->GetBinCenter(binmax);
 			
-// 			for(int is1=binmax;is1<=hh[i2]->GetNbinsX();is1++)
-// 			{
-// 				if((hh[i2]->GetBinContent(is1)/valmax)<0.05)
-// 				{
-// 					bin5percent=is1;
-// 					val5percent=hh[i2]->GetBinContent(is1);
-// 					x5percent=hh[i2]->GetBinCenter(is1);
-// 					break;
-// 				}
-// 			}
-// 			hh[i2]->Fit(tf3,"q","q",xmax,x5percent);
+ 			for(int is1=binmax;is1<=hh[i2]->GetNbinsX();is1++)
+ 			{
+ 				if((hh[i2]->GetBinContent(is1)/valmax)<0.05)
+ 				{
+ 					bin5percent=is1;
+ 					val5percent=hh[i2]->GetBinContent(is1);
+ 					x5percent=hh[i2]->GetBinCenter(is1);
+ 					break;
+ 				}
+ 			}
+ 			hh[i2]->Fit(tf3,"q","q",xmax,x5percent);
 			
-// 			if(i2==0) hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),4500);
-// 			else hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),3500);
+ 			if(i2==0) hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),4500);
+ 			else hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),3500);
 			
 			nchi2.clear();ulim.clear();
 // 			ul=3000;
@@ -222,7 +222,7 @@ int main( int argc, const char* argv[] )
 			
 			
 // // 			2-component fit
-			tf4->SetParameter(0,50);
+		/*	tf4->SetParameter(0,50);
 			tf4->SetParameter(1,2000);
 			tf4->SetParameter(2,6);
 			tf4->SetParameter(4,1600);
@@ -235,7 +235,7 @@ int main( int argc, const char* argv[] )
 			
 			hh[i2]->Fit(tf4,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),4500);
 
-			
+		*/	
 			
 			np=SlowComponents[i2]->GetN();
 			SlowComponents[i2]->SetPoint(np,RunNo,tf3->GetParameter(6));
