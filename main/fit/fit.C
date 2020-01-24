@@ -192,50 +192,7 @@ int main( int argc, const char* argv[] )
  			else hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),3500);
 			
 			nchi2.clear();ulim.clear();
-// 			ul=3000;
-// 			while(ul<=4000)
-// 			{
-// 				hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),ul);
-// 				nchi2.push_back(tf3->GetChisquare()/tf3->GetNDF());
-// 				ulim.push_back(ul);
-// 				ul+=100;
-// 			}
-// 			ul=4000;
-// 			for(int is1=0;is1<nchi2.size();is1++)
-// 			{
-// 				if(nchi2[is1]<ul)
-// 				{
-// 					ul=nchi2[is1];
-// 					imin=is1;
-// 				}
-// 			}
-// 			
-// 			hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),ulim[imin]);
-// 			
-// 			hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),4500);
-// 			if(RunNo==293 && i2==3) hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),3500);
-// // 			hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),4500);
-// // 			if(RunNo>270) hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),3500);
-// // 			if(i2==3) hh[i2]->Fit(tf3,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),3500);
-			
-// 			pe->Fit(tfl,"q","q",0.,300.);
-			
-			
-// // 			2-component fit
-		/*	tf4->SetParameter(0,50);
-			tf4->SetParameter(1,2000);
-			tf4->SetParameter(2,6);
-			tf4->SetParameter(4,1600);
-			
-			tf4->SetParLimits(0,0,100);
-			tf4->SetParLimits(1,1800,2100);
-			tf4->SetParLimits(2,2,20);
-			tf4->SetParLimits(3,0,100);
-			tf4->SetParLimits(4,500,2000);
-			
-			hh[i2]->Fit(tf4,"q","q",hh[i2]->GetBinCenter(hh[i2]->GetMaximumBin()),4500);
 
-		*/	
 			
 			np=SlowComponents[i2]->GetN();
 			SlowComponents[i2]->SetPoint(np,RunNo,tf3->GetParameter(6));
