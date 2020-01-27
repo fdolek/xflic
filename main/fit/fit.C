@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
 #include <time.h>
 #include <math.h>
 #include <string.h>
@@ -28,7 +27,6 @@
 #include "TGraph2D.h"
 #include "TGraphErrors.h"
 #include "TSpectrum.h"
-
 #include "TVirtualFFT.h"
 #include "Math/Functor.h"
 #include "TPolyLine3D.h"
@@ -45,12 +43,11 @@ int RunNo=0;
 char hname[1000];
 char hname2[1000];
 
-// string PMTNames[8]={"LAr_wTPB","LAr_noTPB","LXe","LAr_wTPB_new","SC1","SC2"};
 string PMTNames[8]={"LAr_noTPB","LAr_wTPB","LAr_wTPB_new","LXe","SC1","SiPM_Quartz","SiPM_TPB","S13371_Window"};
 
 int main( int argc, const char* argv[] )
 {
-// 	RunNo=atoi(argv[1]);
+	//RunNo=atoi(argv[1]);
 	
  	sprintf(hname,"NitroXenFits_3-component.root");
 	//sprintf(hname,"NitroXenFits_2-component.root");
@@ -58,7 +55,7 @@ int main( int argc, const char* argv[] )
 	TFile* inroot;
 	
  	ofstream outfile("FitResults_3component.txt");
-//	ofstream outfile("FitResults_2component.txt");
+	//stream outfile("FitResults_2component.txt");
 	
 	int colors[8]={3,1,4,2,1,2,3,4};
 	
@@ -98,26 +95,17 @@ int main( int argc, const char* argv[] )
 	TF1* tf4=new TF1("tf4","[0]*exp(-(x-[1])/[2])+[3]*exp(-(x-[1])/[4])",0.,15000.);
 	TF1* tfl=new TF1("tfl","landau",0.,30000.);
 	
-// 	int NRuns=34;
-// 	int RunList[34]={212,215,219,221,226,229,234,238,243,247,250,254,258,262,268,270,275,278,281,282,284,288,291,293,299,304,308,317,319,323,325,327,332,336};
+	//int NRuns=34;
+	//int RunList[34]={212,215,219,221,226,229,234,238,243,247,250,254,258,262,268,270,275,278,281,282,284,288,291,293,299,304,308,317,319,323,325,327,332,336};
 	
-// 	int NRunsN2=15;
-// 	int RunListN2[15]={212,247,254,258,262,268,270,275,278,282,284,288,291,293,299};
-// 	int NRunsN2=13;
-// 	int RunListN2[13]={247,254,258,262,268,270,275,278,282,284,288,291,293};
+	//int NRunsN2=15;
+	//int RunListN2[15]={212,247,254,258,262,268,270,275,278,282,284,288,291,293,299};
+	//int NRunsN2=13;
+	//int RunListN2[13]={247,254,258,262,268,270,275,278,282,284,288,291,293};
 	int NRunsN2=1;
 	int RunListN2[1]={421};
 	
-// 	int NRunsXe=24;
-// 	int RunListXe[24]={212,247,254,258,262,268,270,275,278,282,284,288,291,293,299,304,308,317,319,323,325,327,332,336};
-// 	int NRunsXe=23;
-// 	int RunListXe[23]={212,247,254,258,262,268,270,275,278,282,284,288,291,293,299,304,308,317,319,325,327,332,336};
-// 	int NRunsXe=22;
-// 	int RunListXe[22]={212,247,254,258,262,268,270,275,278,282,284,288,291,293,304,308,317,319,325,327,332,336};
-// 	int NRunsXe=20;
-// 	int RunListXe[20]={247,254,258,262,268,270,275,278,282,284,288,291,293,304,308,317,319,325,332,336};
-// 	int NRunsXe=21;
-// 	int RunListXe[21]={212,247,254,258,262,268,270,275,278,282,284,288,291,293,299,304,308,317,319,332,336};
+
 	int NRunsXe=8;
 	int RunListXe[8]={421,426,435,443,449,454,464,470};
 	
@@ -152,11 +140,11 @@ int main( int argc, const char* argv[] )
 		for(int i2=0;i2<8;i2++)
 		{
 			sprintf(hname,"AllUnsatAvgWF_%s",PMTNames[i2].c_str());
-// 			sprintf(hname,"AvgWF_%s",PMTNames[i2].c_str());//default after event selection
-// 			sprintf(hname,"AvgWFShifted_%s",PMTNames[i2].c_str());
+			//sprintf(hname,"AvgWF_%s",PMTNames[i2].c_str());//default after event selection
+			//sprintf(hname,"AvgWFShifted_%s",PMTNames[i2].c_str());
 			inroot->GetObject(hname,hh[i2]);
 			
-// // // 			3-component fit
+			// // //3-component fit
  			tf3->SetParameter(0,50);
  			tf3->SetParameter(1,2000);
  			tf3->SetParameter(2,6);
@@ -167,7 +155,7 @@ int main( int argc, const char* argv[] )
  			tf3->SetParLimits(1,1800,2100);
  			tf3->SetParLimits(2,2,20);
  			tf3->SetParLimits(3,0,100);
-// // 			tf3->SetParLimits(4,10,400);
+			//tf3->SetParLimits(4,10,400);
  			tf3->SetParLimits(4,10,800);
  			tf3->SetParLimits(5,0,100);
  			tf3->SetParLimits(6,500,2000);
@@ -239,16 +227,16 @@ int main( int argc, const char* argv[] )
 		for(int i2=0;i2<8;i2++)
 		{
 			sprintf(hname,"AllUnsatAvgWF_%s",PMTNames[i2].c_str());
-// 			sprintf(hname,"AvgWF_%s",PMTNames[i2].c_str());//default after event selection
-// 			sprintf(hname,"AvgWFShifted_%s",PMTNames[i2].c_str());
+			//sprintf(hname,"AvgWF_%s",PMTNames[i2].c_str());//default after event selection
+			//sprintf(hname,"AvgWFShifted_%s",PMTNames[i2].c_str());
 			inroot->GetObject(hname,hh[i2]);
-// 			sprintf(hname,"PE_1500_15000_%s",PMTNames[i2].c_str());
-// 			sprintf(hname,"PE_1500_8000_%s",PMTNames[i2].c_str());
+			//sprintf(hname,"PE_1500_15000_%s",PMTNames[i2].c_str());
+			//sprintf(hname,"PE_1500_8000_%s",PMTNames[i2].c_str());
 			sprintf(hname,"PE_1800_6000_%s",PMTNames[i2].c_str());
 			inroot->GetObject(hname,pe);
 			
-// 			sprintf(hname,"Integral_1500_15000_%s",PMTNames[i2].c_str());
-// 			sprintf(hname,"Integral_1500_8000_%s",PMTNames[i2].c_str());
+			//sprintf(hname,"Integral_1500_15000_%s",PMTNames[i2].c_str());
+			//sprintf(hname,"Integral_1500_8000_%s",PMTNames[i2].c_str());
 			sprintf(hname,"Integral_1800_6000_%s",PMTNames[i2].c_str());
 			inroot->GetObject(hname,integ);
 			
@@ -267,36 +255,36 @@ int main( int argc, const char* argv[] )
 			//special fits
 			if(RunNo==270 && i2==3) integ->Fit(tfl,"q","q",0.,1000.);
 			if(RunNo==304 && i2==2) integ->Fit(tfl,"q","q",0.,4000.);
-// 			if(RunNo==323 && i2==2) integ->Fit(tfl,"q","q",1500,5000.);
+			//if(RunNo==323 && i2==2) integ->Fit(tfl,"q","q",1500,5000.);
 			if(RunNo==325 && i2==2) integ->Fit(tfl,"q","q",0,8000.);
 			if(RunNo==327 && i2==2) integ->Fit(tfl,"q","q",0,8000.);
 			if(RunNo==332 && i2==2) integ->Fit(tfl,"q","q",0,8000.);
-// 			if(RunNo==323 && i2==0) integ->Fit(tfl,"q","q",800,5000.);
+			//if(RunNo==323 && i2==0) integ->Fit(tfl,"q","q",800,5000.);
 			
 			
 				
 			
-// 			np=PEsFromIntegrals[i2]->GetN();
-// 			PEsFromIntegrals[i2]->SetPoint(np,RunNo,hh[i2]->Integral()/calibs[calibID][i2]);
-// 			PEsFromIntegrals[i2]->SetPointError(np,0,0);
+			//np=PEsFromIntegrals[i2]->GetN();
+			//PEsFromIntegrals[i2]->SetPoint(np,RunNo,hh[i2]->Integral()/calibs[calibID][i2]);
+			//PEsFromIntegrals[i2]->SetPointError(np,0,0);
 			
 			np=PEsFromIntegrals[i2]->GetN();
 			PEsFromIntegrals[i2]->SetPoint(np,RunNo,tfl->GetParameter(1)/calibs[calibID][i2]);
 			PEsFromIntegrals[i2]->SetPointError(np,0,(tfl->GetParameter(1)/calibs[calibID][i2])*sqrt(pow(caliberrs[calibID][i2]/calibs[calibID][i2],2)+pow(tfl->GetParError(1)/tfl->GetParameter(1),2)));
 			
 			outroot->cd();
-// 			sprintf(hname2,"%s_%d",hh[i2]->GetName(),RunNo);
-// 			hh[i2]->SetName(hname2);hh[i2]->SetTitle(hname2);
-// 			hh[i2]->GetXaxis()->SetTitle("Time (ns)");hh[i2]->GetXaxis()->CenterTitle();
-// 			hh[i2]->GetYaxis()->SetTitle("Mean ADC Counts");hh[i2]->GetYaxis()->CenterTitle();
-// 			hh[i2]->SetLineColor(colors[i2]);
-// 			hh[i2]->Write();
+			//sprintf(hname2,"%s_%d",hh[i2]->GetName(),RunNo);
+			//hh[i2]->SetName(hname2);hh[i2]->SetTitle(hname2);
+			//hh[i2]->GetXaxis()->SetTitle("Time (ns)");hh[i2]->GetXaxis()->CenterTitle();
+			//hh[i2]->GetYaxis()->SetTitle("Mean ADC Counts");hh[i2]->GetYaxis()->CenterTitle();
+			//hh[i2]->SetLineColor(colors[i2]);
+			//hh[i2]->Write();
 			
 			for(int is1=1;is1<=hh[i2]->GetNbinsX()-binoffset[i2];is1++)
 			{
 				hh[i2]->SetBinContent(is1,hh[i2]->GetBinContent(is1+binoffset[i2])/calibs[calibID][i2]);
 			}
-// 			hh[i2]->Scale(hh[i2]->Integral()/calibs[calibID][i2]);
+			//hh[i2]->Scale(hh[i2]->Integral()/calibs[calibID][i2]);
 			sprintf(hname2,"%s_%d_PE",hh[i2]->GetName(),RunNo);
 			hh[i2]->SetName(hname2);hh[i2]->SetTitle(hname2);
 			hh[i2]->GetXaxis()->SetTitle("Time (ns)");hh[i2]->GetXaxis()->CenterTitle();
@@ -363,7 +351,7 @@ int main( int argc, const char* argv[] )
 	
 	outroot->Close();
 	
-// 	sprintf(hname,"cp PMTCalibration3_%d.root %s/Histos/PMTCalibration3_%d.root",RunNo,AnalysisFilePath,RunNo);system(hname);
+		// 	sprintf(hname,"cp PMTCalibration3_%d.root %s/Histos/PMTCalibration3_%d.root",RunNo,AnalysisFilePath,RunNo);system(hname);
 }
 
 
